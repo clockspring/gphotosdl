@@ -427,7 +427,16 @@ func main() {
 	// If login is required, run the browser standalone
 	if *login {
 		slog.Info("Log in to google with the browser that pops up, close it, then re-run this without the -login flag")
-		cmd := exec.Command(browserPath, "--no-default-browser-check", "--no-first-run", "--disable-sync", "--user-data-dir="+browserConfig, loginURL)
+		cmd := exec.Command(
+			browserPath,
+			"--no-default-browser-check",
+			"--no-first-run",
+			"--disable-sync",
+			"--auto-accept-browser-signin-for-tests",
+			"--disable-default-apps",
+			"--user-data-dir="+browserConfig,
+			loginURL,
+		)
 		err = cmd.Start()
 		if err != nil {
 			slog.Error("Failed to start browser", "err", err)

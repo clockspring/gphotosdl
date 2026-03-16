@@ -25,21 +25,21 @@ import (
 )
 
 const (
-	program       = "gphotosdl"
-	gphotosURL    = "https://photos.google.com/"
-	loginURL      = "https://photos.google.com/login"
-	gphotoURLReal = "https://photos.google.com/photo/"
-	gphotoURL     = "https://photos.google.com/lr/photo/" // redirects to gphotosURLReal which uses a different ID
-	photoID       = "AF1QipNJVLe7d5mOh-b4CzFAob1UW-6EpFd0HnCBT3c6"
+	program         = "gphotosdl"
+	gphotosURL      = "https://photos.google.com/"
+	loginURL        = "https://photos.google.com/login"
+	gphotoURLReal   = "https://photos.google.com/photo/"
+	gphotoURLLegacy = "https://photos.google.com/lr/photo/" // redirects to gphotosURLReal which uses a different ID
 )
 
 // Flags
 var (
-	debug   = flag.Bool("debug", false, "set to see debug messages")
-	login   = flag.Bool("login", false, "set to launch login browser")
-	show    = flag.Bool("show", false, "set to show the browser (not headless)")
-	addr    = flag.String("addr", "localhost:8282", "address for the web server")
-	useJSON = flag.Bool("json", false, "log in JSON format")
+	debug     = flag.Bool("debug", false, "set to see debug messages")
+	login     = flag.Bool("login", false, "set to launch login browser")
+	show      = flag.Bool("show", false, "set to show the browser (not headless)")
+	addr      = flag.String("addr", "localhost:8282", "address for the web server")
+	legacyIDs = flag.Bool("legacy-ids", false, fmt.Sprintf("use legacy IDs to get photos (using the base URL %s)", gphotoURLLegacy))
+	useJSON   = flag.Bool("json", false, "log in JSON format")
 )
 
 // Global variables
@@ -52,6 +52,7 @@ var (
 	version       = "DEV"     // set by goreleaser
 	commit        = "NONE"    // set by goreleaser
 	date          = "UNKNOWN" // set by goreleaser
+	gphotoURL     string      // Base URL for photos (either gphotoURLLegacy or gphotoURLReal)
 )
 
 // Remove the download directory and contents
@@ -89,6 +90,13 @@ func config() (err error) {
 		slog.SetLogLoggerLevel(level) // set log level of Default Handler
 	}
 	slog.Debug(version)
+
+	if *legacyIDs {
+		gphotoURL = gphotoURLLegacy
+	} else {
+		gphotoURL = gphotoURLReal
+	}
+	slog.Debug(fmt.Sprintf("Using base URL for photos: %s", gphotoURL))
 
 	configRoot, err = os.UserConfigDir()
 	if err != nil {
@@ -345,7 +353,7 @@ func (g *Gphotos) Download(photoID string) (string, error) {
 		if strings.HasPrefix(e.Response.URL, gphotoURLReal) {
 			netResponse = e
 			return true
-		} else if strings.HasPrefix(e.Response.URL, gphotoURL) {
+		} else if strings.HasPrefix(e.Response.URL, gphotoURLLegacy) {
 			netResponse = e
 			return true
 		}
@@ -419,7 +427,7 @@ func main() {
 	// If login is required, run the browser standalone
 	if *login {
 		slog.Info("Log in to google with the browser that pops up, close it, then re-run this without the -login flag")
-		cmd := exec.Command(browserPath, "--user-data-dir="+browserConfig, loginURL)
+		cmd := exec.Command(browserPath, "--no-default-browser-check", "--no-first-run", "--disable-sync", "--user-data-dir="+browserConfig, loginURL)
 		err = cmd.Start()
 		if err != nil {
 			slog.Error("Failed to start browser", "err", err)

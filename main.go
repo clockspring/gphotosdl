@@ -449,7 +449,7 @@ func main() {
 			os.Exit(2)
 		}
 		slog.Info("Now restart this program without -login")
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	g, err := New()

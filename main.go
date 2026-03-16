@@ -179,9 +179,12 @@ func (g *Gphotos) startBrowser() error {
 		Headless(!*show).
 		UserDataDir(browserConfig).
 		Preferences(browserPrefs).
+		Delete("use-mock-keychain").
 		Set("disable-gpu").
 		Set("disable-audio-output").
 		Logger(logger{})
+
+	slog.Debug(fmt.Sprintf("Launcher command line: %q", l.FormatArgs()))
 
 	url, err := l.Launch()
 	if err != nil {
@@ -226,6 +229,7 @@ func (g *Gphotos) startBrowser() error {
 			slog.Debug("Authenticated")
 			break
 		}
+		slog.Debug("Current URL", info.URL)
 		slog.Info("Please log in, or re-run with -login flag")
 	}
 	if !authenticated {
